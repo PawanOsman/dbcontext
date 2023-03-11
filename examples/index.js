@@ -10,6 +10,7 @@ class AppDbContext extends DbContext {
 }
 
 const appDbContext = new AppDbContext();
+await appDbContext.WaitForLoad();
 
 let users = appDbContext.users.ToArray();
 console.log(users);
