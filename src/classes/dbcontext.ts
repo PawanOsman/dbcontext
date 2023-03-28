@@ -69,7 +69,12 @@ class DbContext {
 		let json = JSON.parse(data);
 
 		for (let key in json) {
-			this[key] = new DbSet(json[key].name, json[key].rows);
+			if(json[key].rows){
+				this[key] = new DbSet(json[key].name, json[key].rows);
+			}
+			else{
+				this[key] = json[key];
+			}
 		}
 
 		await Wait(1000);
@@ -80,7 +85,12 @@ class DbContext {
 		let tmpFilePath = this.getTmpPath(this.path);
 		let result: any = {};
 		for (let key in this) {
-			if (this[key] instanceof DbSet) {
+			if (key === "options") continue;
+			if (key === "path") continue;
+			if (key === "intervalId") continue;
+			if (key === "loaded") continue;
+
+			if (this[key] instanceof DbSet || this[key] instanceof Object || typeof this[key] === "string" || typeof this[key] === "number" || typeof this[key] === "boolean") {
 				result[key] = this[key];
 			}
 		}
