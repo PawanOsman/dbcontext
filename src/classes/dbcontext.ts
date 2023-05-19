@@ -18,10 +18,14 @@ class DbContext {
 		if (this.options.inMemory) this.loaded = true;
 		else {
 			this.load();
+			let saving = false;
 			this.intervalId = setInterval(async () => {
 				if (!this.loaded) return;
+				if (saving) return;
+				saving = true;
 				await Wait(100);
-				this.save();
+				await this.save();
+				saving = false;
 			}, this.options.saveInterval);
 		}
 	}
@@ -81,8 +85,8 @@ class DbContext {
 					this[key] = json[key];
 				}
 			}
-		} catch (e) {
-			// ignore
+		} catch (e: any) {
+			console.log(`Failed to load db from ${this.path}. make sure you have read access to ${this.path}. Error: ${e.message}`);
 		}
 
 		await Wait(1000);
@@ -103,8 +107,19 @@ class DbContext {
 				result[key] = this[key];
 			}
 		}
-		await fs.promises.writeFile(tmpFilePath, JSON.stringify(result, null, 4));
-		await fs.promises.rename(tmpFilePath, this.path);
+		try {
+			await fs.promises.writeFile(tmpFilePath, JSON.stringify(result, null, 4));
+			if (fs.existsSync(tmpFilePath)) {
+				let tmpFileData = await fs.promises.readFile(tmpFilePath, "utf8");
+				if (this.isJSON(tmpFileData)) {
+					await fs.promises.rename(tmpFilePath, this.path);
+				}
+			} else {
+				console.log(`Failed to save db to ${this.path}. make sure you have write access to ${this.path}.`);
+			}
+		} catch (e: any) {
+			console.log(`Failed to save db to ${this.path}. make sure you have write access to ${this.path}. Error: ${e.message}}`);
+		}
 	}
 
 	public async close() {
